@@ -112,3 +112,23 @@ En el bloque principal:
 Inicialmente el cliente podía desconectarse por `timeout` porque el servidor no respondía a los `noop`.
 
 Este comportamiento fue corregido agregando una respuesta explícita con `{"ack": "noop"}` desde el host, asegurando que haya tráfico bidireccional y se mantenga viva la conexión.
+
+
+## Test
+
+Se testeó para un Servidor:
+
+![Server Init](img/PC1_server_init.png)
+
+Y un Cliente:
+
+![Client Init](img/PC2_client_init.png)
+
+Y al dibujar en el Cliente:
+
+![Client Drawn](img/PC2_client_drawn.png)
+
+Se vió esto en el Servidor:
+![Server Drawn](img/PC1_server_drawn.png)
+
+Se puede apreciar esto a detalle en el [siguiente video](https://drive.google.com/file/d/1KXl6M1pM_lXBcAo_F2WVzlWEESUfwsXA/view?usp=sharing).
