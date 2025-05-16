@@ -216,7 +216,7 @@ class PixBoardGUI:
         self.canvas = tk.Canvas(
             self.root, width=SIZE * PIX, height=SIZE * PIX, bg="white"
         )
-        self.canvas.pack(side="left")
+        self.canvas.pack(side="top")
         self.px_ids: List[List[int]] = [[None] * SIZE for _ in range(SIZE)]
         for y in range(SIZE):
             for x in range(SIZE):
@@ -238,7 +238,7 @@ class PixBoardGUI:
             height=SIZE * PIX,
             highlightthickness=0,
         )
-        self.palette_canvas.pack(side="right")
+        self.palette_canvas.pack(side="bottom")
         for idx, col in enumerate(PALETTE_COLORS):
             px = idx % PALETTE_SIZE
             py = idx // PALETTE_SIZE
