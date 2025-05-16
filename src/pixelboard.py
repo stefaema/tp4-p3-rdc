@@ -51,6 +51,7 @@ def local_ip():
 # ---------------------------------------------------------------------------
 
 def generate_palette() -> List[str]:
+    
     colors: List[str] = []
     for y in range(PALETTE_SIZE):
         l = 0.9 - 0.8 * (y / (PALETTE_SIZE - 1))
@@ -61,7 +62,13 @@ def generate_palette() -> List[str]:
             h = x / PALETTE_SIZE
             r, g, b = colorsys.hls_to_rgb(h, l, 1.0)
             colors.append(f"#{int(r*255):02X}{int(g*255):02X}{int(b*255):02X}")
+
+    # Add grayscale row
+    for x in range(PALETTE_SIZE):
+        g = int((x / (PALETTE_SIZE - 1)) * 255)
+        colors.append(f"#{g:02X}{g:02X}{g:02X}")
     return colors
+
 
 PALETTE_COLORS = generate_palette()
 
@@ -221,6 +228,8 @@ class PixBoardGUI:
         self.root.title("PixBoard")
 
         self.tool_mode = ToolMode.POINT
+        self.selected_palette_id = None
+
 
         self.canvas = tk.Canvas(
             self.root, width=SIZE * PIX, height=SIZE * PIX, bg="white"
@@ -244,7 +253,7 @@ class PixBoardGUI:
         self.palette_canvas = tk.Canvas(
             self.root,
             width=SIZE * PIX,
-            height=SIZE * PIX,
+            height=(SIZE + 1) * PIX, # extra row for Grayscale palette
             highlightthickness=0,
         )
         self.palette_canvas.pack(side="bottom")
@@ -306,10 +315,34 @@ class PixBoardGUI:
 
     def _palette_click(self, evt):
         x, y = evt.x // PIX, evt.y // PIX
-        if 0 <= x < PALETTE_SIZE and 0 <= y < PALETTE_SIZE:
+        if 0 <= x < PALETTE_SIZE and 0 <= y < PALETTE_SIZE + 1:
             idx = y * PALETTE_SIZE + x
             self.current_color = PALETTE_COLORS[idx]
             print(f"[GUI] Color selected: {self.current_color or 'transparent'}")
+
+            # Remove previous highlight
+            if self.selected_palette_id is not None:
+                self.palette_canvas.delete(self.selected_palette_id)
+
+            # Draw new highlight
+            x0, y0 = x * PIX, y * PIX
+            x1, y1 = x0 + PIX, y0 + PIX
+
+            def invert_color(hex_color):
+                if not hex_color:
+                    return "#000000"
+                r = 255 - int(hex_color[1:3], 16)
+                g = 255 - int(hex_color[3:5], 16)
+                b = 255 - int(hex_color[5:7], 16)
+                return f"#{r:02X}{g:02X}{b:02X}"
+
+            highlight_color = invert_color(self.current_color)
+            self.selected_palette_id = self.palette_canvas.create_rectangle(
+                x0, y0, x1, y1,
+                outline=highlight_color,
+                width=2
+            )
+
 
     def set_px(self, x: int, y: int, color: str):
         fill = color
