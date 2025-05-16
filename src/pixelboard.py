@@ -111,7 +111,7 @@ class NetPeer:
                 while True:
                     msg = self._recv_json(conn)
                     if msg.get("noop"):
-                        print(f"[Host] NOOP from {ip}")
+                        print(f"[Host] NOOP (Keep-alive) from {ip}")
                         continue
                     if "x" in msg:
                         x, y, c = msg["x"], msg["y"], msg["c"]
