@@ -24,7 +24,7 @@ from collections import deque
 # ---------------------------------------------------------------------------
 
 SIZE = 32          # canvas is SIZE × SIZE pixels
-PIX  = 16          # each pixel's on-screen square size (px)
+PIX  = 14          # each pixel's on-screen square size (px)
 PORT = 7007        # default TCP port
 PALETTE_SIZE = 32  # palette grid 32 × 32 → occupies same visual area
 
