@@ -123,7 +123,9 @@ class NetPeer:
                     msg = self._recv_json(conn, buffer)
                     if msg.get("noop"):
                         print(f"[Host] NOOP (Keep-alive) from {ip}")
+                        self._send_json(conn, {"ack": "noop"})
                         continue
+
                     if "x" in msg:
                         x, y, c = msg["x"], msg["y"], msg["c"]
                         board[y][x] = c
@@ -213,6 +215,9 @@ class NetPeer:
                             self.on_px(x, y, snap[y][x])
                 elif "x" in msg:
                     self.on_px(msg["x"], msg["y"], msg["c"])
+                elif "ack" in msg:
+                    if msg["ack"] == "noop":
+                        print(f"[Client] Keep-alive ACK received")
         except Exception as e:
             print(f"[Client] Disconnected or error: {e}")
 
