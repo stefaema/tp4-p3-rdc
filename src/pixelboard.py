@@ -18,7 +18,7 @@ import threading
 import time
 import tkinter as tk
 from typing import Callable, List
-
+from utils.whatismyip import local_ip
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -55,6 +55,7 @@ def generate_palette() -> List[str]:
 
 
 PALETTE_COLORS = generate_palette()
+
 
 
 # ---------------------------------------------------------------------------
@@ -163,11 +164,14 @@ class NetPeer:
         srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         srv.bind(("", port))
         srv.listen()
-        print(f"[PixBoard] Hosting on *:{port}")
+        print(f"[PixBoard] Hosting on *:{port}. Remember that your IP is {local_ip()}")
+        print("[PixBoard] Waiting for clients...")
 
         while True:
             conn, _ = srv.accept()
             clients.append(conn)
+            print("[PixBoard] New client connected,with IP:", conn.getpeername())
+
             threading.Thread(target=client_thread, args=(conn,), daemon=True).start()
 
     # ---------- Client mode ----------
