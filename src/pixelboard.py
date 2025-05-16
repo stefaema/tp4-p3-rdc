@@ -273,6 +273,9 @@ class PixBoardGUI:
     def _add_toolbar(self):
         frame = tk.Frame(self.root)
         frame.pack(side="bottom", pady=5)
+
+        ip_label = tk.Label(frame, text=f"Your IP: {local_ip()}", fg="blue")
+        ip_label.pack(side="top", pady=2)
         for mode in ToolMode:
             b = tk.Button(
                 frame,
