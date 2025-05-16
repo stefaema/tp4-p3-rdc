@@ -25,7 +25,7 @@ from collections import deque
 
 SIZE = 32          # canvas is SIZE × SIZE pixels
 PIX  = 14          # each pixel's on-screen square size (px)
-PORT = 7007        # default TCP port
+PORT = 7007        # default TCP porta
 PALETTE_SIZE = 32  # palette grid 32 × 32 → occupies same visual area
 
 # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ class NetPeer:
     def __init__(self, listen: bool, host_addr: str | None, port: int, on_px: Callable[[int, int, str], None]):
         self.on_px = on_px
         self.q_out = queue.Queue()
-        self.keepalive_interval = 8
+        self.keepalive_interval = 3
         self.active = True
 
         if listen:
@@ -83,12 +83,16 @@ class NetPeer:
 
     @staticmethod
     def _recv_json(sock):
+        sock.settimeout(None)
         data = b""
         while not data.endswith(b"\n"):
-            chunk = sock.recv(4096)
-            if not chunk:
-                raise ConnectionError("peer closed")
-            data += chunk
+            try:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    raise ConnectionError("peer closed")
+                data += chunk
+            except socket.timeout:
+                continue
         return json.loads(data.decode())
 
     @staticmethod
@@ -119,8 +123,10 @@ class NetPeer:
                         self.on_px(x, y, c)
                         with lock:
                             for p in clients.values():
-                                try: self._send_json(p, msg)
-                                except: pass
+                                try:
+                                    self._send_json(p, msg)
+                                except:
+                                    pass
             except Exception as e:
                 print(f"[Host] Disconnected: {ip}: {e}")
             finally:
@@ -138,8 +144,10 @@ class NetPeer:
                 self.on_px(x, y, c)
                 with lock:
                     for p in clients.values():
-                        try: self._send_json(p, msg)
-                        except: pass
+                        try:
+                            self._send_json(p, msg)
+                        except:
+                            pass
 
         threading.Thread(target=forward_host_events, daemon=True).start()
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -153,8 +161,10 @@ class NetPeer:
             ip = addr[0]
             with lock:
                 if ip in clients:
-                    try: clients[ip].close()
-                    except: pass
+                    try:
+                        clients[ip].close()
+                    except:
+                        pass
                     print(f"[Host] Replacing existing connection from {ip}")
                 clients[ip] = conn
             print(f"[Host] Client connected: {ip}")
@@ -163,16 +173,23 @@ class NetPeer:
     def _client_loop(self, host, port):
         def sender(sock):
             while self.active:
-                msg = self.q_out.get()
-                try: self._send_json(sock, msg)
-                except: break
+                try:
+                    msg = self.q_out.get(timeout=1)
+                    self._send_json(sock, msg)
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    print(f"[Client] Sender error: {e}")
+                    break
 
         def keep_alive(sock):
             while self.active:
                 try:
                     time.sleep(self.keepalive_interval)
                     self._send_json(sock, {"noop": 1})
-                except: break
+                except Exception as e:
+                    print(f"[Client] Keep-alive error: {e}")
+                    break
 
         try:
             s = socket.create_connection((host, port), timeout=10)
@@ -190,6 +207,7 @@ class NetPeer:
                     self.on_px(msg["x"], msg["y"], msg["c"])
         except Exception as e:
             print(f"[Client] Disconnected or error: {e}")
+
 
 # ---------------------------------------------------------------------------
 # GUI
