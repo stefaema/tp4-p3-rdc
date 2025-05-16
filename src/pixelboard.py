@@ -82,18 +82,17 @@ class NetPeer:
             threading.Thread(target=self._client_loop, args=(host_addr, port), daemon=True).start()
 
     @staticmethod
-    def _recv_json(sock):
-        sock.settimeout(None)
-        data = b""
-        while not data.endswith(b"\n"):
-            try:
-                chunk = sock.recv(4096)
-                if not chunk:
-                    raise ConnectionError("peer closed")
-                data += chunk
-            except socket.timeout:
-                continue
-        return json.loads(data.decode())
+    def _recv_json(sock, buffer: bytearray) -> dict:
+        while b"\n" not in buffer:
+            chunk = sock.recv(4096)
+            if not chunk:
+                raise ConnectionError("peer closed")
+            buffer.extend(chunk)
+        line_end = buffer.index(b"\n")
+        line = buffer[:line_end]
+        del buffer[:line_end + 1]
+        return json.loads(line.decode())
+
 
     @staticmethod
     def _send_json(sock, obj):
@@ -111,9 +110,10 @@ class NetPeer:
         def handle_client(conn, addr):
             ip = addr[0]
             try:
+                buffer = bytearray()
                 self._send_json(conn, {"snapshot": board})
                 while True:
-                    msg = self._recv_json(conn)
+                    msg = self._recv_json(conn, buffer)
                     if msg.get("noop"):
                         print(f"[Host] NOOP (Keep-alive) from {ip}")
                         continue
@@ -171,6 +171,7 @@ class NetPeer:
             threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
     def _client_loop(self, host, port):
+        buffer = bytearray()
         def sender(sock):
             while self.active:
                 try:
@@ -197,7 +198,7 @@ class NetPeer:
             threading.Thread(target=sender, args=(s,), daemon=True).start()
             threading.Thread(target=keep_alive, args=(s,), daemon=True).start()
             while True:
-                msg = self._recv_json(s)
+                msg = self._recv_json(s, buffer)
                 if "snapshot" in msg:
                     snap = msg["snapshot"]
                     for y in range(SIZE):
